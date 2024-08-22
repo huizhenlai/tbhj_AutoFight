@@ -11,58 +11,57 @@ from PySide6.QtCore import QThread, Signal
 from Ui.Ui_Auto_fight import Ui_Auto_fight
 # This Python file uses the following encoding: utf-8
 
+global_hwnd1 = -1
+global_hwnd2 = -1
 class WorkerThread(QThread):
     result_ready = Signal(str)
-
-    def __init__(self, key_code, hwnd1, hwnd2):
+    def __init__(self, key_code):
         super().__init__()
         self.key_code = key_code
         self.state_1 = False
         self.state_2 = False
-        self.hwnd1 = hwnd1
-        self.hwnd2 = hwnd2
         #self.stop_event = threading.Event()
 
     def run(self):
+        global global_hwnd1
+        global global_hwnd2
         while self.state_1 or self.state_2:
             if self.state_1 == True:
-                #print("p1")
-                win32api.SendMessage(self.hwnd1, win32con.WM_KEYDOWN, ord('W'), 0)
+                # print("p1")
+                win32api.SendMessage(global_hwnd1, win32con.WM_KEYDOWN, ord('W'), 0)
                 time.sleep(0.05)  # 按键间隔
-                win32api.SendMessage(self.hwnd1, win32con.WM_KEYUP, ord('W'), 0)
+                win32api.SendMessage(global_hwnd1, win32con.WM_KEYUP, ord('W'), 0)
                 time.sleep(0.1)
-                win32api.SendMessage(self.hwnd1, win32con.WM_KEYDOWN, ord('A'), 0)
+                win32api.SendMessage(global_hwnd1, win32con.WM_KEYDOWN, ord('A'), 0)
                 time.sleep(0.05)  # 按键间隔
-                win32api.SendMessage(self.hwnd1, win32con.WM_KEYUP, ord('A'), 0)
+                win32api.SendMessage(global_hwnd1, win32con.WM_KEYUP, ord('A'), 0)
 
             if self.state_2 == True:
-                #print("p2")
-                win32api.SendMessage(self.hwnd2, win32con.WM_KEYDOWN, ord('W'), 0)
+                # print("p2")
+                win32api.SendMessage(global_hwnd2, win32con.WM_KEYDOWN, ord('W'), 0)
                 time.sleep(0.05)  # 按键间隔
-                win32api.SendMessage(self.hwnd2, win32con.WM_KEYUP, ord('W'), 0)
+                win32api.SendMessage(global_hwnd2, win32con.WM_KEYUP, ord('W'), 0)
                 time.sleep(0.1)
-                win32api.SendMessage(self.hwnd2, win32con.WM_KEYDOWN, ord('A'), 0)
+                win32api.SendMessage(global_hwnd2, win32con.WM_KEYDOWN, ord('A'), 0)
                 time.sleep(0.05)  # 按键间隔
-                win32api.SendMessage(self.hwnd2, win32con.WM_KEYUP, ord('A'), 0)
-
+                win32api.SendMessage(global_hwnd2, win32con.WM_KEYUP, ord('A'), 0)
 
 class Widget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.hwnd_1 = -1
+        self.hwnd_2 = -1
+        self.flag = False
         self.setWindowTitle("紫衣工具箱")
         self.ui = Ui_Auto_fight()
         self.ui.setupUi(self)
         self.ui.plainTextEdit.setPlainText("感谢使用")
         self.time = eval(self.ui.lineEdit_time.text())
-        #Tab_key = self.ui.lineEdit_Tab.text()
-        #A_key = self.ui.lineEdit_A.text()
-        #self.keys_sequence = [Tab_key, A_key]  # 按键序列
+
         self.ui.lineEdit_handle1.setText("未定义")
         self.ui.lineEdit_handle2.setText("未定义")
         self.ui.lineEdit_title1.setText("未定义")
         self.ui.lineEdit_title2.setText("未定义")
-        self.hwnd_1 = -1
-        self.hwnd_2 = -1
 
         self.ui.pushButton_1.clicked.connect(self.game_1)
         self.ui.pushButton_2.clicked.connect(self.game_2)
@@ -74,7 +73,8 @@ class Widget(QWidget):
         self.ui.pushButton_stop_2.clicked.connect(self.stop_thread_2)
 
         key_code = ['w', 'a']
-        self.worker_thread = WorkerThread(key_code, self.hwnd_1, self.hwnd_2)
+        self.worker_thread = WorkerThread(key_code)
+
         # self.worker_thread.result_ready.connect(self.handle_result)
         self.worker_thread.start()
 
@@ -91,6 +91,7 @@ class Widget(QWidget):
             print("state2 停止")
             start_string = "停止 : 窗口2 : " + str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             self.ui.plainTextEdit.appendPlainText(start_string)
+            self.flag = True
 
     def game_1(self):
         time.sleep(2)
@@ -99,6 +100,8 @@ class Widget(QWidget):
         title_1 = win32gui.GetWindowText(hwnd_1)
 
         self.hwnd_1 = hwnd_1
+        global global_hwnd1
+        global_hwnd1 = hwnd_1
         self.ui.lineEdit_handle1.setText(str(hwnd_1))
         self.title_1 = title_1
         self.ui.lineEdit_title1.setText(str(title_1))
@@ -110,6 +113,8 @@ class Widget(QWidget):
         title_2 = win32gui.GetWindowText(hwnd_2)
 
         self.hwnd_2 = hwnd_2
+        global global_hwnd2
+        global_hwnd2 = hwnd_2
         self.ui.lineEdit_handle2.setText(str(hwnd_2))
         self.title_2 = title_2
         self.ui.lineEdit_title2.setText(str(title_2))
